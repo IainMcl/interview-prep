@@ -1,0 +1,1 @@
+alter table pokemon_abilities rename to pokemon_abilitys;
