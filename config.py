@@ -23,3 +23,14 @@ class Config(object):
     
     def get_database_options(self):
         return self.config.options('database')
+
+
+def get_database_config(c: Config) -> dict:
+    return {
+        'username': c.get('database', 'postgres_user'),
+        'password': c.get('database', 'postgres_password'),
+        'host': c.get('database', 'host'),
+        'port': c.get('database', 'port'),
+        'database': c.get('database', 'postgres_db')
+    }
+    

@@ -1,17 +1,20 @@
 import psycopg2
-from psycopg2 import Error
+# from psycopg2 import Error
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Database(object):
     conn = None
     curr = None
 
-    def __init__(self, username, password, host, port, database):
-        self.username = username
-        self.password = password
-        self.host = host
-        self.port = port
-        self.database = database
+    def __init__(self, username: str, password: str, host: str, port: int, database: str):
+        self.username: str = username
+        self.password: str = password
+        self.host: str = host
+        self.port: int = port
+        self.database: str = database
         self.connection_string = self.__str__()
 
     def __str__(self):
@@ -22,19 +25,18 @@ class Database(object):
 
     def __enter__(self):
         self.connect()
-        self.cursor = self.conn.cursor()
+        self.curr = self.conn.cursor()
         return self
-    
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.conn:
             self.conn.close()
         if exc_type is not None:
-            print(exc_type, exc_val)
+            logger.warn(exc_type, exc_val)
             return False
-        print("Database connection closed")
+        logger.debug("Database connection closed")
         return True
 
-    
     def connect(self):
         """
         Connect to the database
@@ -47,21 +49,20 @@ class Database(object):
                 host=self.host,
                 port=self.port
             )
-            print("Successfully connected to the database")
+            logger.debug("Successfully connected to the database")
             self.conn = conn
             return conn
         except Exception as e:
-            print("Failed to connect to the database")
-            print(e)
+            logger.error("Failed to connect to the database", e)
 
-    def disconnect(self):
+    def disconnect(self) -> None:
         """
         Disconnect from the database
         """
         self.conn.close()
-        print("Disconnected from the database")
+        logger.debug("Disconnected from the database")
 
-    def execute(self, query, *args):
+    def execute(self, query: str, *args) -> None:
         """
         Execute a query
         """
@@ -69,13 +70,12 @@ class Database(object):
             cursor = self.conn.cursor()
             cursor.execute(query, *args)
             self.conn.commit()
-            print("Query executed successfully")
+            logger.debug("Query executed successfully")
         except Exception as e:
             self.conn.rollback()
-            print("Failed to execute the query, rolling back")
-            print(e)
+            logger.error("Failed to execute the query, rolling back", e)
 
-    def execute_many(self, query, args):
+    def execute_many(self, query: str, args) -> None:
         """
         Execute a query with multiple arguments
         """
@@ -83,34 +83,31 @@ class Database(object):
             cursor = self.conn.cursor()
             cursor.executemany(query, args)
             self.conn.commit()
-            print("Query executed successfully")
+            logger.debug("Query executed successfully")
         except Exception as e:
             self.conn.rollback()
-            print("Failed to execute the query, rolling back")
-            print(e)
+            logger.error("Failed to execute the query, rolling back", e)
 
-    def fetch(self, query):
+    def fetch(self, query: str, args) -> list[tuple]:
         """
         Fetch the results of a query
         """
         try:
             cursor = self.conn.cursor()
-            cursor.execute(query)
-            rows = cursor.fetchall()
+            cursor.execute(query, args)
+            rows: list[tuple] = cursor.fetchall()
             return rows
         except Exception as e:
-            print("Failed to fetch the results")
-            print(e)
+            logger.error("Failed to fetch the results", e)
 
-    def start_transaction(self):
+    def start_transaction(self) -> None:
         """
         Start a transaction
         """
         self.conn.cursor().execute("BEGIN TRANSACTION")
 
-    def commit_transaction(self):
+    def commit_transaction(self) -> None:
         """
         Commit a transaction
         """
         self.conn.cursor().execute("COMMIT;")
-        
